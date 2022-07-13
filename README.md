@@ -1,7 +1,7 @@
 
-# Welcome to your CDK Python project!
+# Using Amazon Comprehend custom classifier to automate classification of IT service requests
 
-This is a blank project for Python development with CDK.
+In this post, we show you how your enterprise can implement a supervised machine learning model using custom classification with Amazon Comprehend . This post demonstrates how to implement and deploy the solution using the AWS Cloud Development Kit (AWS CDK) v2 in an isolated VPC environment consisting of only private subnets. This post will also use the code to demonstrate how you can use the AWS CDK provider framework, a “mini-framework” for implementing provider for AWS CloudFormation custom resources to create, update, or delete a custom resource – such as an Amazon Comprehend endpoint
 
 The `cdk.json` file tells the CDK Toolkit how to execute your app.
 
