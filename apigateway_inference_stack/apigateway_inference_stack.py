@@ -24,9 +24,11 @@ class APIGWInferenceStack(Stack):
     def __init__(self, scope: Construct, construct_id: str, vpc: _ec2.Vpc, **kwargs) -> None:
         super().__init__(scope, construct_id, **kwargs)
         
-        
         documentclassifierarn = CfnParameter(self, "documentclassifierarn", description="DocumentClassifierARN")
         
+        # Create Comprehend Endpoint Lambda function that creates, updates and deletes the Amazon Comprehend endpoint based on your stack lifecycle events
+        # cdk deploy triggers this Lambda function to create the Amazon Comprehend endpoint
+        # cdk destroy triggers this Lambda function to delete the Amazon Comprehend endpoint
         comprehend_endpoint_lambda  = _lambda.Function(self, "CreateComprehendEndPointLambda",
                                       description="Lambda function for Creating Comprehend EndPoint",
                                       runtime=_lambda.Runtime.PYTHON_3_8,
@@ -37,17 +39,15 @@ class APIGWInferenceStack(Stack):
                                       timeout=Duration.minutes(5),
                                       memory_size=3008
                                       )
-                                      
-        comprehend_endpoint_lambda.role.add_managed_policy(_iam.ManagedPolicy.from_aws_managed_policy_name(
-            "AmazonS3FullAccess"))
-        comprehend_endpoint_lambda.role.add_managed_policy(_iam.ManagedPolicy.from_aws_managed_policy_name(
-            "ComprehendFullAccess"))
-        comprehend_endpoint_lambda.role.add_managed_policy(_iam.ManagedPolicy.from_aws_managed_policy_name(
-            "CloudWatchLogsFullAccess"))
-        comprehend_endpoint_lambda.role.add_managed_policy(_iam.ManagedPolicy.from_aws_managed_policy_name(
-           "AmazonSNSFullAccess"))
+                      
+        comprehend_endpoint_lambda.role.add_to_policy(_iam.PolicyStatement(
+            actions=["comprehend:CreateEndpoint","comprehend:DeleteEndpoint","comprehend:UpdateEndpoint"],
+            resources=["arn:aws:comprehend:"+Stack.of(self).region+":"+Stack.of(self).account+":document-classifier-endpoint/*", "arn:aws:comprehend:"+Stack.of(self).region+":"+Stack.of(self).account+":document-classifier/*"]
            
-        verify_comprehend_endpoint  = _lambda.Function(self, "VerifyComprehendEndPointLambda",
+            ))
+
+        # Create Verify Comprehend Endpoint Lambda function that acts as an asynchronous handler for Custom provider framework . This  enables operations that require a long waiting period for a resource, which can exceed the AWS Lambda timeout
+        verify_comprehend_endpoint_lambda  = _lambda.Function(self, "VerifyComprehendEndPointLambda",
                                       description="Lambda function for Verifying Comprehend EndPoint",
                                       runtime=_lambda.Runtime.PYTHON_3_8,
                                       code=_lambda.Code.from_asset(
@@ -57,25 +57,22 @@ class APIGWInferenceStack(Stack):
                                       timeout=Duration.minutes(5),
                                       memory_size=3008
                                       )
-                                      
-        verify_comprehend_endpoint.role.add_managed_policy(_iam.ManagedPolicy.from_aws_managed_policy_name(
-            "AmazonS3FullAccess"))
-        verify_comprehend_endpoint.role.add_managed_policy(_iam.ManagedPolicy.from_aws_managed_policy_name(
-            "ComprehendFullAccess"))
-        verify_comprehend_endpoint.role.add_managed_policy(_iam.ManagedPolicy.from_aws_managed_policy_name(
-            "CloudWatchLogsFullAccess"))
-        verify_comprehend_endpoint.role.add_managed_policy(_iam.ManagedPolicy.from_aws_managed_policy_name(
-           "AmazonSNSFullAccess"))
+        
+        verify_comprehend_endpoint_lambda.role.add_to_policy(_iam.PolicyStatement(
+            actions=["comprehend:DescribeEndpoint"],
+            resources=["arn:aws:comprehend:"+Stack.of(self).region+":"+Stack.of(self).account+":document-classifier-endpoint/*"]
+            ))
+
            
-        # Create Lambda backed Custom provider
+        # Create Lambda backed Custom Resource provider using the Provider Framework
         custom_provider = _cr.Provider(self, "ComprehendEndPointProvider",
             on_event_handler=comprehend_endpoint_lambda,
-            is_complete_handler=verify_comprehend_endpoint,  # optional async "waiter"
+            is_complete_handler=verify_comprehend_endpoint_lambda,  # optional async "waiter"
             query_interval=Duration.seconds(5),
             vpc=vpc
             )
             
-        # Create Custom Resource - Comprehend EndPoint
+        # Create Custom Resource using the Provider Framework . Here the custom resource is the Amazon Comprehend EndPoint
         custom_resource=CustomResource(self, "ComprehendEndPointResource", 
                 properties={
                 "documentclassifierarn": documentclassifierarn
@@ -85,7 +82,7 @@ class APIGWInferenceStack(Stack):
                 )
                 
     
-        # The code that defines your stack goes here
+        # Create Invoke Comprehend Lambda functions which is to invoke the trained custom classifier model
         invoke_comprehend_lambda  = _lambda.Function(self, "InvokeComprehendLambda",
                                     description="Lambda function for invoking comprehend endpoint for Inference",
                                       runtime=_lambda.Runtime.PYTHON_3_8,
@@ -101,14 +98,14 @@ class APIGWInferenceStack(Stack):
                                       )
                                       
         
-        invoke_comprehend_lambda.role.add_managed_policy(_iam.ManagedPolicy.from_aws_managed_policy_name(
-            "AmazonS3FullAccess"))
-        invoke_comprehend_lambda.role.add_managed_policy(_iam.ManagedPolicy.from_aws_managed_policy_name(
-            "ComprehendFullAccess"))
-        invoke_comprehend_lambda.role.add_managed_policy(_iam.ManagedPolicy.from_aws_managed_policy_name(
-            "CloudWatchLogsFullAccess"))
+        invoke_comprehend_lambda.role.add_to_policy(_iam.PolicyStatement(
+            actions=["comprehend:ClassifyDocument","comprehend:DescribeEndpoint"],
+            resources=["arn:aws:comprehend:"+Stack.of(self).region+":"+Stack.of(self).account+":document-classifier-endpoint/*"]
+            ))
+        
+ 
      
-            
+        # Create API Gateway REST API secured by IAM authorizer 
         restapi = _apigateway.RestApi(self, "ComprehendAPIInvokeV1", 
                                             description='Invoke Comprehend API for Classification' , 
                                             endpoint_configuration=_apigateway.EndpointConfiguration(

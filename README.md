@@ -103,6 +103,12 @@ You will see the below response received from the custom classifier model:
 ```
 Amazon Comprehend returns confidence scores for each label that it has attributed correctly. If the service is highly confident about a label, the score will be closer to 1. Hence, for the Amazon Comprehend custom classifier model that was trained using the SEOSS dataset - the custom classifier model predicts that the text belongs to class `SPARK`
 
+
+## Cleaning up
+To clean up all the resources created in this blog post that were created as part of the training stack and the inference stack, use the following command. This command deletes all the AWS resources created as part of the previous cdk deploy commands:
+	`$ cdk destroy --all`
+
+
 ## Useful commands
 
  * `cdk ls`          list all stacks in the app
