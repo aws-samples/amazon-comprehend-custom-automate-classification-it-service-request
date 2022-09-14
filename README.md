@@ -5,24 +5,24 @@ In this post, we show you how your enterprise can implement a supervised machine
 ## Solution Overview
 
 Here are the high-level steps of the solution and an overview of it:
-1.	Upload the [SEOSS dataset](https://dataverse.harvard.edu/dataset.xhtml?persistentId=doi:10.7910/DVN/PDDZ4Q) to the S3 bucket created as part of the training stack deployment process. The training stack deployment process creates the training stack as shown below:
+1.	Upload the [SEOSS dataset](https://dataverse.harvard.edu/dataset.xhtml?persistentId=doi:10.7910/DVN/PDDZ4Q) to the S3 bucket created as part of the training stack deployment process. This creates an event trigger that invokes the etl_lambda function. The training stack deployment process creates the training stack as shown below:
 
     ![](images/training_stack.png)
            
      
-2.	S3 multi-part upload trigger invokes the `etl_lambda` function that downloads the raw data set from S3 to EFS.
-3.	`etl_lambda` function performs data preprocessing task of the SEOSS dataset.
-4.	Post completion of the data preprocessing tasks by `etl_lambda`, it uploads the transformed data with prepped_data prefix to the S3 bucket.
+2.	The `etl_lambda` function downloads the raw data set from Amazon S3 to Amazon EFS.
+3.	The `etl_lambda` function performs data preprocessing task of the SEOSS dataset.
+4.	When the function is complete, it uploads the transformed data with prepped_data prefix to the S3 bucket
 5.	After the upload of transformed data to prepped_data prefix is complete, a successful ETL completion message is send to Amazon SNS.
-6.	SNS triggers the `train_classifier_lambda` function which initiates the Amazon Comprehend classifier training in a multi-class mode. 
+6.	In Amazon Comprehend, you can classify your documents using two modes: multi-class or multi-label. Multi-class mode identifies one and only one class for each document, and multi-label mode, identifies one or more labels for each document. Since we are trying to identify a single class to each document, we train the custom classifier model in multi-class mode.SNS triggers the `train_classifier_lambda` function which initiates the Amazon Comprehend classifier training in a multi-class mode. 
 7.	The `train_classifier_lambda` function initiates the Amazon Comprehend custom classifier training. 
 8.	Amazon Comprehend downloads the transformed data from the prepped_data prefix in S3 to train the custom classifier model.
-9.	After completion of the custom classifier model training, Amazon Comprehend uploads the `model.tar.gz` file to output_data prefix of the S3 bucket. The average completion time for training the custom classifier model is approximately 10 hrs.
-10.	S3 upload trigger invokes the `extract_comprehend_model_name_lambda` function which is used to retrieve the custom classifier model ARN.
-11.	`extract_comprehend_model_name_lambda` function extracts the custom classifier model ARN from the S3 event payload and list document classifier call.
-12.	`extract_comprehend_model_name_lambda` function sends the custom classifier model ARN to the email address that you had subscribed earlier as part of the training stack creation process. You then use this ARN to deploy the inference stack. 
+9.	When the model training is complete, Amazon Comprehend uploads the `model.tar.gz` file to output_data prefix of the S3 bucket. The average completion time to train this custom classifier model is approximately 10 hrs.
+10.	The Amazon S3 upload trigger invokes the `extract_comprehend_model_name_lambda` function which  retrieves the custom classifier model ARN.
+11.	The function extracts the custom classifier model ARN from the S3 event payload and the response of `list-document-classifiers` call.
+12.	The function sends the custom classifier model ARN to the email address that you had subscribed earlier as part of the training stack creation process. You then use this ARN to deploy the inference stack as show below 
 
-This deployment then creates the inference stack as shown below. The inference stack provides you with a REST API secured by an IAM authorizer that can then be used to generate confidence scores of the labels based on the input text supplied from a third-party application or a client machine.
+The inference stack provides you with a REST API secured by an IAM authorizer that can then be used to generate confidence scores of the labels based on the input text supplied from a third-party application or a client machine.
 
    ![](images/inference_stack.png)
 
