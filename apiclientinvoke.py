@@ -21,7 +21,7 @@ pandas workloads, MLlib for machine learning, GraphX for graph processing, and S
 
 #<restapi-id> to be updated based on the REST API ID value retreived from deploying the APIGWInferenceStack
 #For example  Rest API URL when deploying in us-east-2
-restapi = "https://<restapi-id>.execute-api.us-east-2.amazonaws.com/prod/invokecomprehendV1"
+restapi = "https://2ltpmuk8di.execute-api.us-east-2.amazonaws.com/prod/invokecomprehendV1"
 
 formatted_data = " ".join(raw_data.split()).replace ('"', '\\"')
 
@@ -33,7 +33,7 @@ headers = {'Content-Type': 'application/json'}
 def signed_request(url, data, params=None, headers=None):
     request = AWSRequest(method="POST", url=url, data=data, headers=headers)
     #Update <AWS-REGION> to the AWS Region where the REST API is deployed
-    SigV4Auth(credentials, "execute-api", "<AWS-REGION>").add_auth(request)
+    SigV4Auth(credentials, "execute-api", "us-east-2").add_auth(request)
     return requests.post( url=url, headers=dict(request.headers), data=data).text
 
 def main():
