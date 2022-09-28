@@ -30,7 +30,7 @@ The inference stack provides you with a REST API secured by an IAM authorizer th
 1. An AWS account
 2. Python 3.7 or later, Node.js, AWS CDK v2 and Git in the development machine
 3. Configure your AWS credentials to access and create AWS resources using AWS CDK
-4. Download the [SEOSS dataset](https://dataverse.harvard.edu/dataset.xhtml?persistentId=doi:10.7910/DVN/PDDZ4Q)  consisting of Requirements, Bug Reports, Code History, and Trace Links of 33 open-source software projects. Save the file `dataverse_file.zip` on your local machine. Please see the below figure:
+4. Download the [SEOSS dataset](https://dataverse.harvard.edu/dataset.xhtml?persistentId=doi:10.7910/DVN/PDDZ4Q)  consisting of Requirements, Bug Reports, Code History, and Trace Links of 33 open-source software projects. Save the file `dataverse_files.zip` on your local machine. Please see the below figure:
 
    ![](images/SEOSS.png)
 
@@ -59,11 +59,12 @@ $ pip install -r requirements.txt
 $ cdk synth
 $ cdk deploy VPCStack EFSStack S3Stack SNSStack ExtractLoadTransformEndPointCreateStack --parameters SNSStack:emailaddressarnnotification=<emailaddress@example.com>
 ```
-After you enter `cdk deploy`, AWS CDK prompts whether you want to deploy changes for each of the stacks called out in the `cdk deploy` command. Enter ‘y’, for each of the stack creation prompts, then the `cdk deploy` step will progress and create these stacks .
-After cdk deploy completes successfully, you create a folder with name raw_data in the S3 bucket `comprehendcustom-<AWS-ACCOUNT-NUMBER>-<AWS-REGION>-s3stack`, and in this folder upload the SEOSS dataset - `dataverse_file.zip` that was downloaded earlier.
+After you enter `cdk deploy`, AWS CDK prompts whether you want to deploy changes for each of the stacks called out in the `cdk deploy` command. Enter ‘y’, for each of the stack creation prompts, then the `cdk deploy` step will progress and create these stacks . Subscribe the email address provide by you to the SNS topic created as part of the `cdk deploy`
+After cdk deploy completes successfully, you create a folder with name raw_data in the S3 bucket `comprehendcustom-<AWS-ACCOUNT-NUMBER>-<AWS-REGION>-s3stack`, and in this folder upload the SEOSS dataset - `dataverse_files.zip` that was downloaded earlier.
 
 ### Deploy Inference Stack:
-**Step 6**: You copy the custom classifier model ARN from the received email and use the below `cdk deploy` command to create the inference stack. This command deploys an API Gateway REST API secured by IAM authorizer, which you use for inference with an AWS user ID or IAM role that just has the `execute-api:Invoke` AWS Identity and Access Management (IAM) privilege . Since the below `cdk deploy` command needs to be run, after model training is completed which could take upto 10 hrs, ensure that you are in the Python virtual environment that you had initialized in Step 3 of the deployment steps and in the `amazon-comprehend-custom-automate-classification-it-service-request` directory:
+**Step 6**: You copy the custom classifier model ARN from the received email and use the below `cdk deploy` command to create the inference stack. This command deploys an API Gateway REST API secured by IAM authorizer, which you use for inference with an AWS user ID or IAM role that just has the `execute-api:Invoke` AWS Identity and Access Management (IAM) privilege . Because you need to run the following command after model training is complete, which could take up to 10 hours, ensure that you’re in the Python virtual environment that you initialized in an earlier step
+and in the `amazon-comprehend-custom-automate-classification-it-service-request directory`
 
 `$ cdk deploy APIGWInferenceStack --parameters APIGWInferenceStack:documentclassifierarn=<custom classifier model ARN retrieved from email>`
 
