@@ -12,7 +12,7 @@ Here are the high-level steps of the solution and an overview of it:
      
 2.	The `etl_lambda` function downloads the raw data set from Amazon S3 to Amazon EFS.
 3.	The `etl_lambda` function performs data preprocessing task of the SEOSS dataset.
-4.	When the function is complete, it uploads the transformed data with prepped_data prefix to the S3 bucket
+4.	When the function execution completes, it uploads the transformed data with prepped_data prefix to the S3 bucket
 5.	After the upload of transformed data to prepped_data prefix is complete, a successful ETL completion message is send to Amazon SNS.
 6.	In Amazon Comprehend, you can classify your documents using two modes: multi-class or multi-label. Multi-class mode identifies one and only one class for each document, and multi-label mode, identifies one or more labels for each document. Since we are trying to identify a single class to each document, we train the custom classifier model in multi-class mode.SNS triggers the `train_classifier_lambda` function which initiates the Amazon Comprehend classifier training in a multi-class mode. 
 7.	The `train_classifier_lambda` function initiates the Amazon Comprehend custom classifier training. 
@@ -74,9 +74,7 @@ Alternatively, you can use the test client `apiclientinvoke.py` from the  reposi
 - You have `boto3` and `requests` Python package installed using pip on the client machine.
 - You have configured Boto3 credentials. By default, the test client assumes that a profile named default is present and it has `execute-api:Invoke` AWS IAM privilege on the REST API.
 - `SigV4Auth` points to the AWS Region where the REST API is deployed. Update the `<AWS-REGION>` value to `us-east-2` in the `apiclientinvoke.py` , if your REST API is deployed in us-east-2.
-- Update `raw_data` variable with the text on which you want to make the class prediction or the classification request . For example: raw_data="""
-Spark is a unified analytics engine for large-scale data processing. It provides high-level APIs in Scala, Java, Python, and R, and an optimized engine that supports general computation graphs for data analysis.
-"""
+- Update `raw_data` variable with the text on which you want to make the class prediction or the classification request . For example: raw_data="""Spark is a unified analytics engine for large-scale data processing. It provides high-level APIs in Scala, Java, Python, and R, and an optimized engine that supports general computation graphs for data analysis."""
 - You have assigned `restapi` variable with the REST API copied earlier : `restapi="https://<restapi-id>.execute-api.us-east-2.amazonaws.com/prod/invokecomprehendV1"`
 
 **Step 8**: Run the `apiclientinvoke.py` after the above updates.
